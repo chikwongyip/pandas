@@ -1,0 +1,1 @@
+select * from ods.fico.ODS_V_AR_DOCUMENT limit 100;

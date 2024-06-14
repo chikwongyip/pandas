@@ -67,7 +67,7 @@ def get_ar_document(date):
                 ) 
         ) <=  to_date('{p_date}')
         """.format(
-            p_date = date
+            p_date=date
         )
     ).to_pandas()
 
@@ -95,12 +95,13 @@ def get_ar_document(date):
             ) > '{p_date}'
             and fi_docstat = 'C'
         """.format(
-            p_date = date
+            p_date=date
         )
     ).to_pandas()
     session.close()
     result = pd.concat([df_1, df_2])
     return result
+
 
 if __name__ == "__main__":
     date = "2024-04-30"
