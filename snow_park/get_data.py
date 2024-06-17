@@ -2,7 +2,7 @@
 from create_session import create_session
 import re
 import pandas as pd
-import datetime
+from datetime import datetime, timedelta
 from pandas.tseries.offsets import MonthEnd
 
 
@@ -122,9 +122,12 @@ def get_ar_open_document(date):
 def calculate_payment_day(row):
     if row['AC_DOC_TYP'] == 'KD':
         return row['POSTING_DATE'] if row['POSTING_DATE'] > row['BASELINE_DATE'] else row['BASELINE_DATE']
-    elif row['AC_DOC_TYP'] == 'DA' or row['AC_DOC_TYP']=='RV':
-        # if re.match("G", row['PMNTTRMS']):
-
+    elif row['AC_DOC_TYP'] == 'DA' or row['AC_DOC_TYP'] == 'RV':
+        if re.match("G", row['PMNTTRMS']) and (
+                re.match('4800', row['ALLOC_NMBR']) or re.match('3800', row['ALLOC_NMBR'])):
+            row['POD_DATE'] = row['POD_DATE'] + timedelta(days=row['ZTAG1'])
+        else:
+            row['LAST_POD_DATE'] = row['LAST_POD_DATE'] + timedelta(days=row['ZTAG1'])
 
 
 if __name__ == "__main__":
