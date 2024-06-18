@@ -126,9 +126,11 @@ def calculate_payment_day(row):
         if re.match("G", row['PMNTTRMS']) and (
                 re.match('4800', row['ALLOC_NMBR']) or re.match('3800', row['ALLOC_NMBR'])):
             row['POD_DATE'] = row['POD_DATE'] + timedelta(days=row['ZTAG1'])
+            row['POD_DATE'] = row['POD_DATE'].date()
         else:
             row['LAST_POD_DATE'] = row['LAST_POD_DATE'] + timedelta(days=row['ZTAG1'])
-
+            row['LAST_POD_DATE'] = row['LAST_POD_DATE'].date()
+    
 
 if __name__ == "__main__":
     df_open_docs = get_ar_open_document('2024-04-30')
