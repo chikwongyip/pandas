@@ -131,7 +131,6 @@ def get_ar_open_document(date):
 #             row['LAST_POD_DATE'] = row['LAST_POD_DATE'] + timedelta(days=row['ZTAG1'])
 #             row['LAST_POD_DATE'] = row['LAST_POD_DATE'].date()
 def calculate_payment_day(row):
-    print(row)
     if row["AC_DOC_TYP"] == "KD":
         return (
             row["POSTING_DATE"]
@@ -139,7 +138,7 @@ def calculate_payment_day(row):
             else row["BASELINE_DATE"]
         )
     if (row["AC_DOC_TYP"] == "DA" or row["AC_DOC_TYP"] == "RV") and (
-        re.match("4800", row["ALLOC_NMBR"]) or re.match("3800", row["ALLOC_NMBR"])
+            re.match("4800", row["ALLOC_NMBR"]) or re.match("3800", row["ALLOC_NMBR"])
     ):
         if re.match("G", row["PMNTTRMS"]):
             return row["POD_DATE"] + timedelta(days=row["ZTAG1"])
@@ -195,10 +194,12 @@ if __name__ == "__main__":
         ]
     )
     # print(result)
-    print(result[result.AC_DOC_TYP == "KD"])
+    # print(result[result.AC_DOC_TYP == "KD"])
     kd = result.query('AC_DOC_TYP == "KD"')
+    print(kd.columns)
+    print('kd', kd)
     kd["PAYMENT_DATE"] = kd.apply(calculate_payment_day)
     da_rv = result.query('AC_DOC_TYP == "DA" or AC_DOC_TYP == "RV"')
     da_rv["PAYMENT_DATE"] = da_rv.apply(calculate_payment_day)
-    print(kd)
+
     # print(result)
