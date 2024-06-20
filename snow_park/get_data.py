@@ -4,6 +4,7 @@ import re
 import pandas as pd
 from datetime import datetime, timedelta
 from pandas.tseries.offsets import MonthEnd
+import math
 
 
 def check_type(desc):
@@ -119,37 +120,37 @@ def get_ar_open_document(date):
     return result
 
 
-# def calculate_payment_day(row,docs):
-#     if row['AC_DOC_TYP'] == 'KD':
-#         return row['POSTING_DATE'] if row['POSTING_DATE'] > row['BASELINE_DATE'] else row['BASELINE_DATE']
-#     elif row['AC_DOC_TYP'] == 'DA' or row['AC_DOC_TYP'] == 'RV':
-#         if re.match("G", row['PMNTTRMS']) and (
-#                 re.match('4800', row['ALLOC_NMBR']) or re.match('3800', row['ALLOC_NMBR'])):
-#             row['POD_DATE'] = row['POD_DATE'] + timedelta(days=row['ZTAG1'])
-#             row['POD_DATE'] = row['POD_DATE'].date()
-#         else:
-#             row['LAST_POD_DATE'] = row['LAST_POD_DATE'] + timedelta(days=row['ZTAG1'])
-#             row['LAST_POD_DATE'] = row['LAST_POD_DATE'].date()
 def calculate_payment_day(row):
-    if row["AC_DOC_TYP"] == "KD":
+    # print(row)
+    if row.AC_DOC_TYP == "KD":
         return (
-            row["POSTING_DATE"]
-            if row["POSTING_DATE"] > row["BASELINE_DATE"]
-            else row["BASELINE_DATE"]
+            row.POSTING_DATE
+            if row.POSTING_DATE > row.BASELINE_DATE
+            else row.BASELINE_DATE
         )
-    if (row["AC_DOC_TYP"] == "DA" or row["AC_DOC_TYP"] == "RV") and (
-            re.match("4800", row["ALLOC_NMBR"]) or re.match("3800", row["ALLOC_NMBR"])
+    if (row.AC_DOC_TYP == "DA" or row.AC_DOC_TYP == "RV") and (
+        re.match("4800", row.ALLOC_NMBR) or re.match("3800", row.ALLOC_NMBR)
     ):
-        if re.match("G", row["PMNTTRMS"]):
-            return row["POD_DATE"] + timedelta(days=row["ZTAG1"])
+        if re.match("G", row.PMNTTRMS):
+            if row.POD_DATE is None:
+                return None
+            else:
+                payment_day = row.POD_DATE + timedelta(days=row.DAYS)
+                return payment_day
         else:
-            return row["LAST_POD_DATE"] + timedelta(days=row["ZTAG1"])
+            if row.LAST_POD_DATE is None:
+                return None
+            else:
+                payment_day = row.LAST_POD_DATE + timedelta(days=row.DAYS)
+                
+                return payment_day
 
 
 if __name__ == "__main__":
     df_open_docs = get_ar_open_document("2024-04-30")
     df_customers = get_customers()
     df_pod = get_pod()
+    df_payment_term = get_payment_term()
     result = df_open_docs.merge(
         df_customers,
         left_on="DEBITOR",
@@ -164,13 +165,21 @@ if __name__ == "__main__":
         how="left",
         suffixes=(False, False),
     )
+    result = result.merge(
+        df_payment_term,
+        left_on="PMNTTRMS",
+        right_on="ZTERM",
+        how="left",
+        suffixes=(False, False),
+    )
     result["GJAHR"] = "2024-04-30"[:4]
-    result["POSTING_DATE"] = result["PSTNG_DATE"].apply(convert_date)
-    result["BASELINE_DATE"] = result["BLINE_DATE"].apply(convert_date)
-    result["POD_DATE"] = result["PODAT"].apply(convert_date)
+    result["POSTING_DATE"] = pd.to_datetime(result["PSTNG_DATE"].apply(convert_date),format="%Y%m%d")
+    result["BASELINE_DATE"] = pd.to_datetime(result["BLINE_DATE"].apply(convert_date),format='%Y%m%d')
+    result["POD_DATE"] = pd.to_datetime(result["PODAT"].apply(convert_date),format='%Y%m%d')
     result["LAST_POD_DATE"] = pd.to_datetime(
         result["POD_DATE"], format="%Y%m"
     ) + MonthEnd(1)
+    result["DAYS"] = result["DAYS"].apply(lambda x: 0 if math.isnan(x) else int(x))
     result = result.filter(
         items=[
             "COMP_CODE",
@@ -182,7 +191,6 @@ if __name__ == "__main__":
             "AC_DOC_NO",
             "ITEM_NUM",
             "DEB_CRE_LC",
-            "ZTAG1",
             "POSTING_DATE",
             "BASELINE_DATE",
             "POD_DATE",
@@ -191,15 +199,15 @@ if __name__ == "__main__":
             "PMNTTRMS",
             "ALLOC_NMBR",
             "AC_DOC_TYP",
+            "DAYS",
         ]
     )
-    # print(result)
-    # print(result[result.AC_DOC_TYP == "KD"])
     kd = result.query('AC_DOC_TYP == "KD"')
-    print(kd.columns)
-    print('kd', kd)
-    kd["PAYMENT_DATE"] = kd.apply(calculate_payment_day)
+    kd["PAYMENT_DATE"] = kd.apply(calculate_payment_day, axis=1)
     da_rv = result.query('AC_DOC_TYP == "DA" or AC_DOC_TYP == "RV"')
-    da_rv["PAYMENT_DATE"] = da_rv.apply(calculate_payment_day)
-
-    # print(result)
+    da_rv["PAYMENT_DATE"] = da_rv.apply(calculate_payment_day, axis=1)
+    
+    dr_group = da_rv.filter(items=["REF_DOC_NO", "PAYMENT_DATE"])
+    
+    dr = result.query('AC_DOC_TYP == "DR"')
+    dr["PAYMENT_DATE"] = dr.apply(calculate_payment_day, axis=1)
