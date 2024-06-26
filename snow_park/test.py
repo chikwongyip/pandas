@@ -1,6 +1,12 @@
 # coding:utf-8
-from datetime import datetime, timedelta
-
-today = datetime.today()
-f_day = today + timedelta(days=10)
-print('today', today, f_day.date())
+import paramiko
+sftp_url = '10.86.113.219'
+sftp_user = 'zhiye'
+sftp_pwd = 'Ab123456'
+ssh = paramiko.SSHClient()
+ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+ssh.connect(sftp_url,22, sftp_user, sftp_pwd)
+sftp = ssh.open_sftp()
+files = sftp.listdir()
+print(files)
+sftp.close()
