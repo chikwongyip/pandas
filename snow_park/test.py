@@ -1,12 +1,7 @@
 # coding:utf-8
-import paramiko
-sftp_url = '10.86.113.219'
-sftp_user = 'zhiye'
-sftp_pwd = 'Ab123456'
-ssh = paramiko.SSHClient()
-ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-ssh.connect(sftp_url,22, sftp_user, sftp_pwd)
-sftp = ssh.open_sftp()
-files = sftp.listdir()
-print(files)
-sftp.close()
+from array import array
+from random import random
+floats = array('d', (random() for i in range(10**7)))
+print(floats[-1])
+choice = '1'
+print('小精灵:推荐你去存取款窗口。' if choice == '1' else '小精灵:金加隆和人民币的兑换率为1：51.3，即1金加隆 = 51.3人民币')
